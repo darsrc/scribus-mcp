@@ -160,7 +160,11 @@ if _has_native:
 
 _QTimer = None
 _qt_binding = None
-if not _has_native:
+# The PyQt QTimer path never fires on stock Scribus builds (the main thread
+# keeps the GIL after PyRun_String), so interactive calls hang. Default to
+# blocking dispatch; set SCRIBUS_MCP_DISPATCH=qt to restore the old path.
+_dispatch_pref = os.environ.get("SCRIBUS_MCP_DISPATCH", "blocking").lower()
+if not _has_native and _dispatch_pref == "qt":
     for _mod in ("PyQt6.QtCore", "PyQt5.QtCore", "PySide6.QtCore", "PySide2.QtCore"):
         try:
             _qt = __import__(_mod, fromlist=["QTimer"])
