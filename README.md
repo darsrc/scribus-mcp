@@ -2,6 +2,18 @@
 
 An MCP (Model Context Protocol) server that lets Claude drive [Scribus](https://www.scribus.net/) — the open-source desktop publishing app — through its Python Scripter API.
 
+## About this fork
+
+This is [darsrc/scribus-mcp](https://github.com/darsrc/scribus-mcp), a fork of upstream [caewa/scribus-mcp](https://github.com/caewa/scribus-mcp) carrying one fix: on stock (non-natively-patched) Scribus builds — reproduced on Scribus 1.6.6/Arch — interactive-mode calls like `open_document` hang forever. The old dispatch loop waited on a PyQt/PySide `QTimer` callback to drain queued commands, but the QTimer callback never fires (confirmed with debug logging), most likely because the main thread keeps the GIL after `PyRun_String`.
+
+**The fix:** the bridge now defaults to blocking dispatch — the main thread waits on the command queue directly instead of waiting on the Qt timer. Set `SCRIBUS_MCP_DISPATCH=qt` if you need to restore the old Qt-timer path.
+
+This fix is pending upstream. Until it lands there, install this fork directly from its git URL — it isn't published to PyPI as its own package:
+
+```bash
+uvx --from git+https://github.com/darsrc/scribus-mcp scribus-mcp --help
+```
+
 ## TL;DR — wire it to Claude Code (Linux, fully auto)
 
 One command, both auto-downloads stacked: `uvx` fetches the MCP server from PyPI on demand, and `SCRIBUS_MCP_AUTO_APPIMAGE=1` makes the launcher pull the official Scribus 1.7.x AppImage to `~/Applications/` on the first interactive tool call. `SCRIBUS_MCP_IGNORE_HOST_SCRIBUS=1` skips every host-binary lookup so the AppImage is used even when the distro ships an older Scribus 1.6. No system-wide install of either piece needed.
